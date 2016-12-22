@@ -5,6 +5,12 @@ const UserSchema = mongoose.Schema({
   local: {
     email: {type: String},
     password: {type: String}
+  },
+  facebook: {
+    id: {type: String},
+    token: {type: String},
+    email: {type: String},
+    name: {type: String}
   }
 });
 

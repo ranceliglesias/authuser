@@ -1,7 +1,10 @@
 const LocalStrategy = require('passport-local').Strategy;
+const FacebookStrategy = require('passport-facebook').Strategy;
 
 // Load the user model
 const User = require('../app/models/user');
+// Load the auth config
+const configAuth = require('./auth');
 
 module.exports = function (passport) {
   // Serialize the user for sessio
@@ -99,4 +102,63 @@ module.exports = function (passport) {
       }
     });
   }));
+
+  // Facebook
+  const fbStrategy = configAuth.facebookAuth;
+  fbStrategy.passReqToCallback = true;
+  passport.use(new FacebookStrategy(fbStrategy, function(req, token, refreshToken, profile) {
+    // Async
+    process.nextTick(function() {
+      // is user Logged in ?
+      if (!req.user) {
+          User.findOne({'facebook.id' : profile.id}, (err, user) => {
+            if (err)
+              return done(err);
+            if (user) {
+              if (!user.facebook.token) {
+                user.facebook.token = token;
+                user.facebook.name = `${profile.name.givenName} ${profile.name.familyName}`;
+                user.facebook.email = (profile.emails[0].value || '').toLowerCase();
+
+                user.save((err) => {
+                  if (err) {
+                    return done(err);
+                  }
+                  return done(null, user);
+                });
+              }
+              return done(null, user);
+            } else {
+              const newUser = new User();
+              newUser.facebook.id = profile.id;
+              newUser.facebook.token = token;
+              newUser.facebook.name = `${profile.name.givenName} ${profile.name.familyName}`;
+              newUser.facebook.email = (profile.emails[0].value || '').toLowerCase();
+
+              newUser.save((err) => {
+                if (err) {
+                  return done(err);
+                }
+                return done(null, newUser);
+              });
+            }
+          });
+      } else {
+        // Exists and is logged in
+        const user = req.user;
+        user.facebook.id = profile.id;
+        user.facebook.token = token;
+        user.facebook.name = `${profile.name.givenName} ${profile.name.familyName}`;
+        user.facebook.email = (profile.emails[0].value || '').toLowerCase();
+
+        user.save((err) => {
+          if (err) {
+            return done(err);
+          }
+          return done(null, user);
+        });
+      }
+    });
+  }));
+
 }
