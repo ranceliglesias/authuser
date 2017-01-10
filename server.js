@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const mongoose = require('mongoose');
@@ -13,25 +14,24 @@ const configDB = require('./config/database.js');
 // config
 mongoose.connect(configDB.url);
 require('./config/passport')(passport);
-
-app.use(morgan('dev'));
-app.use(cookieParser()); //read cookies
-app.use(bodyParser.urlencoded({ extended: true}));
-app.use(bodyParser.json());
 // set up ejs for templating
 app.set('view engine', 'ejs');
 
+app.use(morgan('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true}));
+app.use(cookieParser()); //read cookies
 // session
 app.use(session({
       secret: 'welovefviwelovefvi',
-      resave: true,
-      saveUninitialized: true
+      resave: false,
+      saveUninitialized: false
 }));
 
 // passport
 app.use(passport.initialize());
-app.use(passport.session()); // persistence
 app.use(flash()); // give a messages
+app.use(passport.session()); // persistence
 // routes
 require('./app/routes')(app, passport);
 
@@ -39,3 +39,5 @@ require('./app/routes')(app, passport);
 app.listen(PORT, () => {
 console.log(`The app is alive at port: ${PORT}`);
 });
+
+module.exports = app;

@@ -1,12 +1,15 @@
+
+const Event = require('../app/models/event');
+
 module.exports = function(app, passport) {
   // Show the home page
   app.get('/', (req, res) => {
-    res.render('index.ejs');
+    res.render('pages/index.ejs');
   });
 
   // Show the profile page
   app.get('/profile', isLoggedIn, (req, res) => {
-    res.render('profile.ejs', {
+    res.render('pages/profile.ejs', {
       user: req.user
     });
   });
@@ -16,11 +19,40 @@ module.exports = function(app, passport) {
     res.redirect('/');
     });
 
-  // Local Strategy
-  app.get('/login', (req, res) => {
-    res.render('login.ejs', {message: req.flash('loginMessage')});
+  // Show pages createEvent
+  app.get('/createevent', (req, res) => {
+    res.render('pages/createevent.ejs', {message: req.flash('loginMessage')});
   });
 
+  // Create Event
+  app.post('/createevent', function(req, res, next) {
+      Event(new Event({
+        title: req.body.title,
+        location: req.body.location,
+        description: req.body.description
+      }).save(function (err) {
+          if (err) {
+              return next(err);
+          }
+          res.redirect('/createevent');
+      }))
+  });
+
+  // Read All Events
+  app.get('/readevents', (req, res) => {
+      Event.find((err, event) => {
+          if (err) {
+              throw err;
+          }
+          res.json(event || {});
+      })
+  });
+
+
+  // Show the form
+  app.get('/login', (req, res) => {
+    res.render('pages/login.ejs', {message: req.flash('loginMessage')});
+  });
   app.post('/login', passport.authenticate('local-login', {
     successRedirect: '/profile',
     failureRedirect: '/login',
@@ -29,7 +61,7 @@ module.exports = function(app, passport) {
 
 // Show the form
   app.get('/signup', (req, res) => {
-    res.render('signup.ejs', {message: req.flash('signupMessage')});
+    res.render('pages/signup.ejs', {message: req.flash('signupMessage')});
   });
 
 // signem up
@@ -37,14 +69,6 @@ module.exports = function(app, passport) {
     successRedirect: '/profile',
     failureRedirect: '/signup',
     failureFlash: true
-  }));
-
-  // Facebook Strategy
-  app.get('/auth/facebook', passport.authenticate('facebook', { scope: 'email'}));
-
-  app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-    successRedirect: '/profile',
-    failureRedirect: '/',
   }));
 
 };
